@@ -1,7 +1,11 @@
-import PySimpleGUI as sg
 import pandas as pd
-import docx # shorten to docx.Document to remove bloat
+import docx
 import os
+import PySimpleGUI as sg
+from openpyxl import load_workbook
+from openpyxl import Workbook
+
+
 
 # GUI for user to input the template form, candidate docs (folder) and the job name
 def retrieveDirPath():
@@ -28,19 +32,20 @@ def retrieveDirPath():
     window.Close()    
     return template_path, folder_path, job_name
 
-# Return the names of all docx files in directory
+# Search Directory for docs 
 def getFolderDocs(directory):
     folder = os.listdir(directory)
     for i in folder:
-        if i[-4:] != 'docx':
+        if i[-4:] != 'docx': # Only docx files
             folder.pop(i)
     return folder
 
-# Input the template E&D Form. Return the possible answers to each question
+# Read template E&D form and return 
 def readTemplate(template):
     template_tables = template.tables
     demographic_categories = {}
     i = 1
+
     for table in template_tables:
         data = []
     # Iterates over each cell and adds to list
@@ -55,29 +60,32 @@ def readTemplate(template):
         i += 1
     # Creates list of all possible answers in the form
     template_answers = list(demographic_categories.values())
-    template_answers = [inner for outer in template_answers for inner in outer]
-
+    template_answers = [inner for outer in template_answers for inner in outer]  
     return demographic_categories, template_answers
 
-# Create an empty dataframe based off the template
+# Create empty Dataframe from template
 def createDF(column_names):  
     # Returns list of tuples of all values (answers) with their associated key (question)
     cat_keys = [(i,x) for i in demographic_categories for x in demographic_categories[i]]
+
     # Creates multilevel dataframe with top level being the question number and the lower level being the possible answers for that question
     df = pd.DataFrame(columns=pd.MultiIndex.from_tuples(cat_keys, names=('Questions', 'Answers')))
+
     # Fills df with 0 to specify integer values
     df.loc[0, :] = 0
     return df
 
-# Record which answers given by candidate
+# Retrieve candidates answers from a filled E&D form
 def retrieveAnswers(doc, template_answers):
     tables = doc.tables
     data = []
+    # Extract answers
     for table in tables:
         for row in table.rows:
             for cell in row.cells:
                 for paragraph in cell.paragraphs:
                     data.append(paragraph.text)
+    # Remove emtpy cells
     data = [x for x in data if x]
     # Finds indices for filled cells that are not in answer cells
     tick_index = [index for index, value in enumerate(data) if value not in template_answers]
@@ -85,10 +93,9 @@ def retrieveAnswers(doc, template_answers):
     demographic_index = list(map(lambda x: x-1, tick_index))
     # Returns a list of the answers given in doc
     demographics = [e for i, e in enumerate(data) if i in demographic_index]
-
     return demographics, demographic_index
 
-# Insert candidate answers into dataframe
+# Insert candidates answers to the Dataframe
 def insertAnswers(template, df, answers, answers_index, row_index):
     # Start at 'Question 1' = start at index 0 
     question_no = 1
@@ -112,16 +119,53 @@ def insertAnswers(template, df, answers, answers_index, row_index):
                 answers.pop(i)
                 question_no = i + 1
             continue
-    
     return df
 
-############
+def sumTotal(df):
+    df.loc['Total', :] = df.sum()
+    return df
+
+def removeBlanks(df):
+    df = df.loc[:, (df != 0).any(axis=0)]
+    return df
+
+# Returns the list of questions from template
+def findTemplateQuestions(template):
+    paras = template.paragraphs
+    questions = []
+    # Append all questions to list including sub-questions (a)/(b)
+    for para in paras:
+        if len(para.text) > 0:
+            if '(a)' in para.text:
+                questions.append(para.text)
+            elif '(b)' in para.text:
+                questions.append(para.text)
+            elif len(para.text) < 29:
+                if '?' not in para.text: # Ensures no questions are added to list
+                    questions.append(para.text)
+    questions = questions[1:]
+    
+    # Remove headings for sub-questions
+    idx_remove = []
+    for i, question in enumerate(questions):
+        if question[0:3] == '(a)':
+            idx_remove.append(i-1)
+            questions[i] = question[4:]
+        elif question[0:3] == '(b)':
+            questions[i] = question[4:]
+
+    questions = [e for i, e in enumerate(questions) if i not in idx_remove]
+    return questions
+
+
+#####   
+    
 
 while True:
+    # Open GUI and retrieve paths 
     template_path, folder_path, job_name = retrieveDirPath()
     print(template_path)
     try:
-        # Check template is docx format
         if template_path[-4:] == 'docx':
             template = docx.Document(template_path)
         else:
@@ -130,36 +174,78 @@ while True:
         print('File not Found 1')
         break
     
+    # Read template and create df based on questions and answers
     demographic_categories, possible_answers = readTemplate(template)
-    
-    df = createDF(demographic_categories)
-    
+    df = createDF(demographic_categories)   
+
+    # Retrieve files from job folder
     try:
         folder = getFolderDocs(folder_path)
     except FileNotFoundError:
         print('File not Found 2')
         break
-    
-    row_index = 0
-    # iterate over each file in folder and insert to df
-    for filename in folder:
+        
+    for i, file in enumerate(folder):
         try:
-            doc = docx.Document(filename)
-            print(doc)
-            answers, answers_index = retrieveAnswers(doc, possible_answers)
-            df = insertAnswers(template, df, answers, answers_index, row_index)
-            row_index += 1
+            doc = docx.Document('{}\{}'.format(folder_path, file))
+            answers, answers_idx = retrieveAnswers(doc, possible_answers)
+            df = insertAnswers(template, df, answers, answers_idx, i)
         except:
-            print('Error in file {}'.format(filename))
+            print('Error in file {}'.format(file))
             pass
-    try:
-        df.loc['Total', :] = df.sum()
-        df.loc[:, (df != 0).any(axis=0)].to_excel('{}.xlsx'.format(job_name))
-        print('Df to excel')
-    except:
-        print('Unsuccessful')
-        break
-    print('Job completed successfully.')
+    
+    df = sumTotal(df)
+    df = removeBlanks(df)
+    
+    # Return the questions from the template
+    questions = findTemplateQuestions(template)
+    
+    # Create workbook
+    book = Workbook()
+    book.save('{}.xlsx'.format(job_name))
+    print('Workbook created')
+    book = load_workbook('{}.xlsx'.format(job_name))
+    writer = pd.ExcelWriter("{}.xlsx".format(job_name), engine='openpyxl')
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    
+    # Insert each question into workbook
+    for i in range(0, len(df.columns.levels[0])):
+        temp = df.loc['Total', 'Question '+str(i+1)].transpose()
+    #    temp.rename(questions[i], inplace=True)
+        temp.index.name = questions[i]
+        sheet = questions[i][0:30]
+        temp.to_excel(writer, sheet_name='Candidate Answers', startcol=i*3)
+    
+    writer.save()
+    print('Job Completed.')
     break
 
-    # Removes any columns with sums = 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
