@@ -119,9 +119,9 @@ def insertAnswers(template, df, answers, answers_index, row_index):
 
 while True:
     template_path, folder_path, job_name = retrieveDirPath()
-    print('1')
     print(template_path)
     try:
+        # Check template is docx format
         if template_path[-4:] == 'docx':
             template = docx.Document(template_path)
         else:
@@ -141,6 +141,7 @@ while True:
         break
     
     row_index = 0
+    # iterate over each file in folder and insert to df
     for filename in folder:
         try:
             doc = docx.Document(filename)
