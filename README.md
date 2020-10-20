@@ -12,9 +12,9 @@ An additional CSV file is outputted containing the raw, unformatted dataset to b
 
 ## Examples
 
-![alt text](https://github.com/Jreece18/E-D/tree/master/Screenshots/GUI.png)
+![alt text](https://github.com/Jreece18/E-D/tree/master/Screenshots/GUI.png?raw=true)
 
-![alt text](https://github.com/Jreece18/E-D/tree/master/Screenshots/Workbook.png)
+![alt text](https://github.com/Jreece18/E-D/tree/master/Screenshots/Workbook.png?raw=true)
 
-![alt text](https://github.com/Jreece18/E-D/tree/master/Screenshots/DashboardTemplate.png)
+![alt text](https://github.com/Jreece18/E-D/tree/master/Screenshots/DashboardTemplate.png?raw=true)
 
