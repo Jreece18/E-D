@@ -23,6 +23,6 @@ Output Excel Workbook:
 
 Dashboard Template:
 
-![Screenshot](Screenshots/DashboardTemplate.png)
+![Screenshot](Screenshots/DashbordTemplate.png)
 
 
