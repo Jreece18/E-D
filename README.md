@@ -12,11 +12,13 @@ An additional CSV file is outputted containing the raw, unformatted dataset to b
 
 ## Examples
 
-
+Basic GUI:
 ![alt_text](https://raw.githubusercontent.com/Jreece18/E-D/master/Screenshots/GUI.png?token=AKQ2HVZIJ63E54YEKW6JGJC7R3RVA)
 
+Output Excel Workbook:
 ![alt_text](https://raw.githubusercontent.com/Jreece18/E-D/master/Screenshots/Workbook.png?token=AKQ2HV5A3RTETPUG7IY67UK7R3RX2)
 
+Dashboard Template:
 ![alt text](https://raw.githubusercontent.com/Jreece18/E-D/master/Screenshots/DashbordTemplate.png?token=AKQ2HV3CTUJ5I5W2W5CSI2K7R3RSM)
 
 
