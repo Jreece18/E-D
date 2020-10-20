@@ -1,0 +1,5 @@
+pandas
+docx
+os
+PySimpleGUI
+openpyxl
