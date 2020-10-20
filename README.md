@@ -16,7 +16,7 @@ Basic GUI:
 
 ![alt_text](https://raw.githubusercontent.com/Jreece18/E-D/master/Screenshots/GUI.png?token=AKQ2HVZIJ63E54YEKW6JGJC7R3RVA)
 
-![Screenshot](GUI.png)
+![Screenshot](Screenshots/GUI.png)
 
 Output Excel Workbook:
 
